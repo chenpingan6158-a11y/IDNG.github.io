@@ -1,0 +1,14 @@
+# 凭证文件（含密钥，禁止提交）
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 虚拟环境（体积大，不应提交）
+.venv/
+
+# 本地数据与导出的日报页面
+data/*.db
+data/report-*.html

@@ -1,0 +1,28 @@
+[project]
+name = "smart-daily-report"
+version = "0.1.0"
+description = "智能日报生成器：自动采集 Git 提交、任务状态与群消息，生成结构化日报并推送"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+# 安装后可自动识别法定节假日与调休；不安装则仅识别周末 + config 中配置的节假日
+holiday = ["chinesecalendar>=1.10"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["collector", "generator", "notifier", "shared"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

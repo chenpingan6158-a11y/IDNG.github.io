@@ -1,0 +1,60 @@
+"""shared/serializer.py 单元测试（design-v2 §3）。"""
+
+from __future__ import annotations
+
+from dashboard_helpers import sample_report
+from shared.serializer import report_to_dict
+
+
+def test_report_to_dict_matches_dashboard_contract() -> None:
+    data = report_to_dict(sample_report())
+
+    assert data["date"] == "2026-09-26"
+    assert data["team_name"] == "研发一组"
+    assert data["failed_sources"] == []
+    assert data["generated_at"] == "18:02"  # UTC 10:02 → 本地 +8
+
+    liu = data["members"][0]
+    assert liu["name"] == "刘政剑"
+    assert liu["github_username"] == "chenpingan6158-a11y"
+
+    commit = liu["commits"][0]
+    assert commit == {
+        "repo": "usermanagersystem.github.io",
+        "message": "新增日报采集模块",
+        "additions": 214,
+        "deletions": 32,
+        "files_changed": 6,
+        "time": "10:24",
+    }
+
+    task = liu["tasks"][0]
+    assert task == {
+        "title": "飞书任务采集",
+        "status_from": "进行中",
+        "status_to": "已完成",
+        "time": "15:10",
+    }
+
+    message = liu["messages"][0]
+    assert message == {
+        "chat_name": "SDD测试",
+        "content": "模板已联调通过",
+        "time": "11:02",
+    }
+
+
+def test_empty_github_username_serializes_to_null() -> None:
+    data = report_to_dict(sample_report())
+    chen = data["members"][1]
+    assert chen["github_username"] is None
+    assert chen["commits"] == []
+    assert chen["messages"][0]["content"] == "上线前跑 --check"
+    assert chen["messages"][0]["time"] == "17:50"
+
+
+def test_failed_sources_are_carried() -> None:
+    report = sample_report()
+    report.failed_sources = ["github", "lark_message"]
+    data = report_to_dict(report)
+    assert data["failed_sources"] == ["github", "lark_message"]

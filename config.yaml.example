@@ -1,0 +1,80 @@
+# 智能日报生成器配置文件
+# 复制为 config.yaml 后按实际情况填写；所有密钥只允许通过环境变量注入
+
+team:
+  name: "研发一组"
+
+# 团队成员身份映射：将 GitHub 与飞书两个命名空间按"人"聚合
+# github 可留空（仅有飞书身份、无 GitHub 账号的成员）
+members:
+  - name: "张三"
+    github: "zhangsan"
+    lark: "zhangsan@company.com"
+  - name: "李四"
+    github: "lisi-dev"
+    lark: "lisi@company.com"
+  - name: "王五"
+    github: "wangwu"
+    lark: "wangwu@company.com"
+
+# GitHub / GitHub Enterprise 数据采集
+github:
+  enabled: true
+  base_url: "https://api.github.com"
+  token_env: "GITHUB_TOKEN"        # 令牌从该环境变量读取
+  repos:
+    - "org/repo-a"
+    - "org/repo-b"
+  per_page: 30
+  timeout: 10                     # 单次请求超时（秒）
+
+# 飞书任务采集
+lark_task:
+  enabled: true
+  app_id_env: "LARK_APP_ID"
+  app_secret_env: "LARK_APP_SECRET"
+  project_id: "proj_xxxxxxxx"
+  timeout: 10
+
+# 飞书群消息采集
+lark_message:
+  enabled: true
+  app_id_env: "LARK_APP_ID"
+  app_secret_env: "LARK_APP_SECRET"
+  chat_id: "oc_xxxxxxxx"
+  chat_name: "研发群"          # 群显示名，用于日报正文
+  # 仅保留包含以下任一关键词的消息
+  keywords: ["上线", "bug", "需求", "联调", "发布", "阻塞", "review"]
+  # 敏感词黑名单：命中即过滤，不进入日报
+  sensitive_words: ["薪资", "工资", "绩效", "裁员", "辞退"]
+  timeout: 10
+
+# 邮件推送（HTML 日报）
+email:
+  enabled: true
+  smtp_host: "smtp.company.com"
+  smtp_port: 465
+  use_ssl: true
+  username_env: "SMTP_USERNAME"
+  password_env: "SMTP_PASSWORD"
+  sender: "report@company.com"
+  recipients:
+    - "leader@company.com"
+
+# 飞书机器人推送（Markdown 日报）
+lark_bot:
+  enabled: true
+  webhook: "https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx"
+  chat_id: "oc_xxxxxxxx"
+  timeout: 10
+
+# 日报历史存储
+storage:
+  sqlite_path: "data/reports.db"
+
+# 工作日与调度
+schedule:
+  # 额外节假日（YYYY-MM-DD）；周末始终跳过；安装 chinesecalendar 后法定节假日自动识别
+  holidays: []
+  # 调休上班日（YYYY-MM-DD）
+  workdays: []

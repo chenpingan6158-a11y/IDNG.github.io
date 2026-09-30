@@ -1,0 +1,86 @@
+"""日报 HTML 模板（design.md §2 generator/template.py）。
+
+使用 Jinja2 将结构化的日报数据渲染为带内联样式的独立 HTML 页面，
+可直接作为 HTML 邮件正文。
+"""
+
+from __future__ import annotations
+
+from datetime import date
+
+from jinja2 import Environment, BaseLoader
+
+from shared.models import MemberReport
+
+_HTML_TEMPLATE = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>{{ team_name }} 工作日报 {{ report_date }}</title>
+</head>
+<body style="margin:0;padding:24px;background:#f5f6f8;font-family:'Segoe UI','Microsoft YaHei',sans-serif;color:#2b2f36;">
+  <div style="max-width:820px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+    <div style="padding:20px 28px;background:#2f6fed;color:#ffffff;">
+      <h1 style="margin:0;font-size:20px;">{{ team_name }} · 工作日报</h1>
+      <div style="margin-top:4px;font-size:13px;opacity:.85;">{{ report_date }}</div>
+    </div>
+
+    {% if failed_sources %}
+    <div style="margin:16px 28px 0;padding:10px 14px;background:#fff4e5;border:1px solid #ffcc80;border-radius:6px;font-size:13px;color:#a15c00;">
+      ⚠️ 以下数据源获取失败：{{ failed_sources | join('、') }}
+    </div>
+    {% endif %}
+
+    {% for member in members %}
+    <section style="padding:18px 28px;border-top:1px solid #eef0f3;">
+      <h2 style="margin:0 0 10px;font-size:16px;color:#2f6fed;">{{ member.name }}</h2>
+
+      <h3 style="margin:10px 0 6px;font-size:13px;color:#6b7280;">代码提交</h3>
+      {% if 'github' in failed_sources %}<p style="margin:0;font-size:13px;color:#c0392b;">⚠️ 数据获取失败</p>
+      {% elif member.commits %}<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;">
+        {% for c in member.commits %}
+        <li><code style="background:#f1f3f5;padding:1px 5px;border-radius:4px;">{{ c.repo }}</code>
+            {{ c.message }} <span style="color:#16a34a;">+{{ c.additions }}</span>/<span style="color:#dc2626;">-{{ c.deletions }}</span></li>
+        {% endfor %}
+      </ul>{% else %}<p style="margin:0;font-size:13px;color:#9aa0a6;">今日无记录</p>{% endif %}
+
+      <h3 style="margin:10px 0 6px;font-size:13px;color:#6b7280;">任务进展</h3>
+      {% if 'lark_task' in failed_sources %}<p style="margin:0;font-size:13px;color:#c0392b;">⚠️ 数据获取失败</p>
+      {% elif member.tasks %}<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;">
+        {% for t in member.tasks %}
+        <li>{{ t.status_from }} → <strong>{{ t.status_to }}</strong>：{{ t.title }}</li>
+        {% endfor %}
+      </ul>{% else %}<p style="margin:0;font-size:13px;color:#9aa0a6;">今日无记录</p>{% endif %}
+
+      <h3 style="margin:10px 0 6px;font-size:13px;color:#6b7280;">协作沟通</h3>
+      {% if 'lark_message' in failed_sources %}<p style="margin:0;font-size:13px;color:#c0392b;">⚠️ 数据获取失败</p>
+      {% elif member.messages %}<ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.8;">
+        {% for m in member.messages %}
+        <li>[{{ m.chat_name }}] {{ m.content }}</li>
+        {% endfor %}
+      </ul>{% else %}<p style="margin:0;font-size:13px;color:#9aa0a6;">今日无记录</p>{% endif %}
+    </section>
+    {% endfor %}
+  </div>
+</body>
+</html>
+"""
+
+_ENV = Environment(loader=BaseLoader(), autoescape=True, trim_blocks=True, lstrip_blocks=True)
+
+
+def render_report_html(
+    team_name: str,
+    report_date: date,
+    members: list[MemberReport],
+    failed_sources: list[str] | None = None,
+) -> str:
+    """渲染独立 HTML 文档。"""
+
+    template = _ENV.from_string(_HTML_TEMPLATE)
+    return template.render(
+        team_name=team_name,
+        report_date=report_date.isoformat(),
+        members=members,
+        failed_sources=failed_sources or [],
+    )
